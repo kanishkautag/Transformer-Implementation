@@ -63,3 +63,22 @@ class LayerNormalization(nn.Module):
         std = x.std(dim = -1, keepdim = True) # (batch, seq_len, 1)
         # eps is to prevent dividing by zero or when std is very small
         return self.alpha * (x - mean) / (std + self.eps) + self.bias
+    
+class FeedForwardBlock(nn.Module):
+
+    def __init__(self, d_model: int, d_ff: int, dropout: float) -> None:
+        super().__init__()
+        self.linear_1 = nn.Linear(d_model, d_ff) # w1 and b1
+        self.dropout = nn.Dropout(dropout)
+        self.linear_2 = nn.Linear(d_ff, d_model) # w2 and b2
+
+    def forward(self, x):
+        # (batch, seq_len, d_model) --> (batch, seq_len, d_ff) --> (batch, seq_len, d_model)
+        return self.linear_2(self.dropout(torch.relu(self.linear_1(x))))
+    
+# FeedForwardBlock applies a position-wise feedforward neural network to each token in the input tensor.
+# The input of shape (batch_size, seq_len, d_model) is transformed as follows:
+# 1. A linear transformation maps the input to a higher-dimensional space (d_ff).
+# 2. ReLU activation is applied element-wise, followed by dropout for regularization.
+# 3. Another linear transformation projects the output back to the original dimension (d_model).
+# This block allows the model to learn complex transformations for each token embedding independently.
